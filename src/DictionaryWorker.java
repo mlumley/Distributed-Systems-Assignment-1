@@ -38,7 +38,13 @@ public class DictionaryWorker extends Thread {
 					break;
 				}
 				else if (inputFromClient.type.equals("query")) {
-					outputToClient = this.processQuery(inputFromClient);
+					outputToClient = this.processQueryWord(inputFromClient);
+				}
+				else if (inputFromClient.type.equals("add")) {
+					outputToClient = this.processAddWord(inputFromClient);
+				}
+				else if (inputFromClient.type.equals("delete")) {
+					outputToClient = this.processDeleteWord(inputFromClient);
 				}
 				
 				if (outputToClient != null) {
@@ -52,10 +58,35 @@ public class DictionaryWorker extends Thread {
 		}
 	}
 	
-	private Message processQuery(Message queryMsg) {
-		String query = queryMsg.payload.get(0);
-		String definition = DictionaryServer.dictionary.get(query);
+	private Message processQueryWord(Message queryMsg) {
+		String word = queryMsg.payload.get(0);
+		String definition = DictionaryServer.dictionary.get(word);
 		return new Message("reply", definition);
+	}
+	
+	private Message processAddWord(Message addMsg) {
+		String word = addMsg.payload.get(0);
+		String definition = addMsg.payload.get(1);
+		
+		if (!DictionaryServer.dictionary.containsKey(word)) { 
+			DictionaryServer.dictionary.put(word, definition);
+			return new Message("reply", "success");
+		}
+		else {
+			return new Message("reply", "failed");
+		}
+	}
+	
+	private Message processDeleteWord(Message deleteMsg) {
+		String word = deleteMsg.payload.get(0);
+		
+		if (DictionaryServer.dictionary.containsKey(word)) { 
+			DictionaryServer.dictionary.remove(word);
+			return new Message("reply", "success");
+		}
+		else {
+			return new Message("reply", "failed");
+		}
 	}
 
 }

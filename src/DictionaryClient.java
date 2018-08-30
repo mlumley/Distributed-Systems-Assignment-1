@@ -3,7 +3,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-
+import java.util.ArrayList;
 import com.google.gson.Gson;
 
 public class DictionaryClient {
@@ -39,7 +39,22 @@ public class DictionaryClient {
 
 			// Console
 			String type = inFromUser.readLine();
-			String message = inFromUser.readLine();
+			ArrayList<String> message = new ArrayList<String>();
+			if (type.equals("query")) {
+				message.add(inFromUser.readLine());
+			}
+			else if (type.equals("add")) {
+				message.add(inFromUser.readLine());
+				message.add(inFromUser.readLine());
+			}
+			else if (type.equals("delete")) {
+				message.add(inFromUser.readLine());
+			}
+			else if (!type.equals("quit")) {
+				System.out.println("Invalid command. Try again.");
+				continue;
+			}
+			
 			Message msgToServer = new Message(type, message);
 			
 			String json = gson.toJson(msgToServer);
