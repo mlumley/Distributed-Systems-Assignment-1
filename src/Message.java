@@ -14,6 +14,16 @@ public class Message {
 		this.type = type;
 		this.payload = payload;
 	}
+	
+	public String getPayload() {
+		String output = "";
+		
+		for(String item : this.payload) {
+			output += item + "\n";
+		}
+		
+		return output;
+	}
 
 	public String toString() {
 		return "Type: " + type + ", Payload: " + payload.toString();

@@ -35,6 +35,7 @@ public class DictionaryWorker extends Thread {
 				System.out.println(input);
 
 				if(inputFromClient.type.equals("quit")) {
+					out.println(gson.toJson(inputFromClient));
 					break;
 				}
 				else if (inputFromClient.type.equals("query")) {

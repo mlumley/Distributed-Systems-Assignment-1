@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
@@ -23,7 +24,7 @@ import com.google.gson.reflect.TypeToken;
 public class DictionaryServer {
 	
 	private static int clientNumber = 1;
-	public static HashMap<String, String> dictionary;
+	public static ConcurrentHashMap<String, String> dictionary;
 
 	/**
 	 * @param args
@@ -35,7 +36,7 @@ public class DictionaryServer {
 		
 		// Read Dictionary file
 		Gson gson = new Gson();
-		Type dictType = new TypeToken<HashMap<String, String>>(){}.getType();
+		Type dictType = new TypeToken<ConcurrentHashMap<String, String>>(){}.getType();
 		dictionary = gson.fromJson(new FileReader("Dictionary.json"), dictType);
 		
 		
