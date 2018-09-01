@@ -1,93 +1,158 @@
+
+/**
+ * COMP90015 : Distributed Systems - Assignment 1
+ * Multi-threaded Dictionary Server
+ * 
+ * @author Michael Lumley <mlumley@student.unimelb.edu.au> : 695059
+ */
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 
 import com.google.gson.Gson;
 
+/**
+ * Worker thread to handle communication with a client
+ */
 public class DictionaryWorker extends Thread {
-	
+
 	private Socket clientSocket = null;
 	private int clientNumber = 0;
-	
-	public DictionaryWorker(Socket clientSocket, int clientNumber) {
+	private Dictionary dictionary = null;
+	private Gson gson = new Gson();
+	private BufferedReader in = null;
+	private PrintWriter out = null;
+
+	/**
+	 * Creates a new worker
+	 * 
+	 * @param clientSocket
+	 *            The socket for the client
+	 * @param clientNumber
+	 *            The number of the client assigned by the server
+	 * @param dictionary
+	 *            The dictionary to use
+	 */
+	public DictionaryWorker(Socket clientSocket, int clientNumber, Dictionary dictionary) {
 		this.clientSocket = clientSocket;
 		this.clientNumber = clientNumber;
+		this.dictionary = dictionary;
+	}
+
+	/**
+	 * Sets up the in and out channels using the socket and sends a welcome message
+	 * to the client
+	 */
+	private void connectToClient() {
+		System.out.println("Connected to client");
+
+		try {
+			in = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
+			out = new PrintWriter(this.clientSocket.getOutputStream(), true);
+		} catch (IOException e) {
+			System.out.println("Error: Could not recieve/send data to client");
+			System.exit(0);
+		}
+
+		Message helloMsg = new Message(Message.MessageTypes.HELLO, "Connected to server. You are client number " + clientNumber);
+		out.println(gson.toJson(helloMsg));
 	}
 
 	@Override
-	public void run() {		
+	public void run() {
 		try {
-			Gson gson = new Gson();
-			System.out.println("Connected to " + this.clientSocket.getInetAddress().getHostName());
-			
-			BufferedReader in = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
-			PrintWriter out = new PrintWriter(this.clientSocket.getOutputStream(), true);
-			
-			Message helloMsg = new Message("hello", "You are client number " + clientNumber);
-			out.println(gson.toJson(helloMsg));
-			
-			while(true) {
+
+			this.connectToClient();
+
+			while (true) {
 				String input = in.readLine();
-				Message inputFromClient = gson.fromJson(input, Message.class);
-				Message outputToClient = null;
+				Message msgFromClient = gson.fromJson(input, Message.class);
+				Message msgToClient = null;
 				System.out.println(input);
 
-				if(inputFromClient.type.equals("quit")) {
-					out.println(gson.toJson(inputFromClient));
+				if (msgFromClient.type == Message.MessageTypes.QUIT) {
+					// Send quit command to client
+					out.println(gson.toJson(msgFromClient));
 					break;
+				} else if (msgFromClient.type == Message.MessageTypes.QUERY) {
+					msgToClient = this.processQueryWord(msgFromClient);
+				} else if (msgFromClient.type == Message.MessageTypes.ADD) {
+					msgToClient = this.processAddWord(msgFromClient);
+				} else if (msgFromClient.type == Message.MessageTypes.DELETE) {
+					msgToClient = this.processDeleteWord(msgFromClient);
 				}
-				else if (inputFromClient.type.equals("query")) {
-					outputToClient = this.processQueryWord(inputFromClient);
-				}
-				else if (inputFromClient.type.equals("add")) {
-					outputToClient = this.processAddWord(inputFromClient);
-				}
-				else if (inputFromClient.type.equals("delete")) {
-					outputToClient = this.processDeleteWord(inputFromClient);
-				}
-				
-				if (outputToClient != null) {
-					out.println(gson.toJson(outputToClient));
+
+				if (msgToClient != null) {
+					out.println(gson.toJson(msgToClient));
 				}
 			}
-			
+
 			this.clientSocket.close();
 		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	private Message processQueryWord(Message queryMsg) {
-		String word = queryMsg.payload.get(0);
-		String definition = DictionaryServer.dictionary.get(word);
-		return new Message("reply", definition);
-	}
-	
-	private Message processAddWord(Message addMsg) {
-		String word = addMsg.payload.get(0);
-		String definition = addMsg.payload.get(1);
-		
-		if (!DictionaryServer.dictionary.containsKey(word)) { 
-			DictionaryServer.dictionary.put(word, definition);
-			return new Message("reply", "success");
-		}
-		else {
-			return new Message("reply", "failed");
-		}
-	}
-	
-	private Message processDeleteWord(Message deleteMsg) {
-		String word = deleteMsg.payload.get(0);
-		
-		if (DictionaryServer.dictionary.containsKey(word)) { 
-			DictionaryServer.dictionary.remove(word);
-			return new Message("reply", "success");
-		}
-		else {
-			return new Message("reply", "failed");
+			System.out.println("Error: Could not read message from client");
 		}
 	}
 
+	/**
+	 * Looks up the word in the dictionary and returns the definition as a message
+	 * 
+	 * @param queryMsg
+	 *            The incoming message from the client
+	 * @return A message containing the definition or an error message if the word
+	 *         was not found
+	 */
+	private Message processQueryWord(Message queryMsg) {
+		String word = queryMsg.payload.get(0);
+
+		if (this.dictionary.hasWord(word)) {
+			ArrayList<String> definition = this.dictionary.getDefinitions(word);
+			return new Message(Message.MessageTypes.REPLY, definition);
+		} else {
+			return new Message(Message.MessageTypes.ERROR, "Word not in dictionary");
+		}
+	}
+
+	/**
+	 * Adds a word and definitions to the dictionary and returns a message with
+	 * whether it was successful or not
+	 * 
+	 * @param addMsg
+	 *            The incoming message from the client
+	 * @return A message containing if the operation was successful or not
+	 */
+	private Message processAddWord(Message addMsg) {
+		String word = addMsg.payload.get(0);
+		ArrayList<String> definition = addMsg.payload;
+		definition.remove(word);
+
+		if (!this.dictionary.hasWord(word)) {
+			this.dictionary.addWord(word, definition);
+			return new Message(Message.MessageTypes.REPLY, "success");
+		} else {
+			return new Message(Message.MessageTypes.ERROR, "Word aleady in dictionary");
+		}
+	}
+
+	/**
+	 * Delete's a word from the dictionary and returns a message with whether it was
+	 * successful or not
+	 * 
+	 * @param deleteMsg
+	 *            The incoming message from the client
+	 * @return A message containing if the operation was successful or not
+	 */
+	private Message processDeleteWord(Message deleteMsg) {
+		String word = deleteMsg.payload.get(0);
+
+		if (this.dictionary.hasWord(word)) {
+			this.dictionary.deleteWord(word);
+			return new Message(Message.MessageTypes.REPLY, "success");
+		} else {
+			return new Message(Message.MessageTypes.ERROR, "Word not in dictionary");
+		}
+	}
 }
