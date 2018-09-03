@@ -46,7 +46,7 @@ public class AddWordPanel extends JPanel {
 		addButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				String word = wordInput.getText();
+				String word = wordInput.getText().toLowerCase();
 				String definitionText = definitionInput.getText();
 				String[] definitions = definitionText.split("\n");
 				ArrayList<String> payload = new ArrayList<String>();

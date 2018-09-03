@@ -40,7 +40,7 @@ public class DeleteWordPanel extends JPanel {
 		deleteButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				String word = wordInput.getText();
+				String word = wordInput.getText().toLowerCase();
 				Message msgToServer = new Message(Message.MessageTypes.DELETE, word);
 
 				out.println(gson.toJson(msgToServer));

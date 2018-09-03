@@ -40,7 +40,7 @@ public class QueryWordPanel extends JPanel {
 		searchButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				String word = wordInput.getText();
+				String word = wordInput.getText().toLowerCase();
 
 				if (word.isEmpty()) {
 					popup.popupErrorMessage("Please enter a word");
