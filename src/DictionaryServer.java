@@ -24,7 +24,7 @@ public class DictionaryServer {
 	public static void main(String[] args) {
 
 		if (args.length != 2) {
-			System.out.println("Error: Incorrect arguments. Please enter the port number and the dictionary filename");
+			System.out.println("Error: Incorrect number of arguments. Please enter the port number and the dictionary filename");
 			System.exit(0);
 		}
 
@@ -35,6 +35,9 @@ public class DictionaryServer {
 			System.out.println("Listening...");
 		} catch (IOException e) {
 			System.out.println("Could not start server on port " + port);
+			System.exit(0);
+		} catch (NumberFormatException e) {
+			System.out.println("Port value is not an integer ");
 			System.exit(0);
 		}
 

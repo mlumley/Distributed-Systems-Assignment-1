@@ -27,8 +27,6 @@ import com.google.gson.JsonSyntaxException;
  */
 public class DictionaryClient {
 
-	private static String hostName = "localhost";
-
 	private Gson gson = new Gson();
 
 	private Socket socket = null;
@@ -140,8 +138,26 @@ public class DictionaryClient {
 	}
 
 	public static void main(String[] args) {
-		DictionaryClient client = new DictionaryClient(DictionaryClient.hostName, Integer.parseInt(args[0]));
-
+		if (args.length != 2) {
+			System.out.println("Error: Incorrect number of arguments. Please enter the hostname and the port number");
+			System.exit(0);
+		}
+		
+		// Default server location
+		String hostName = "loachost";
+		int port = 8080;
+		
+		// Load from terminal
+		try {
+			hostName = args[0];
+			port = Integer.parseInt(args[1]);
+		} catch (NumberFormatException e) {
+			System.out.println("Port value is not an integer ");
+			System.exit(0);
+		}
+		
+		DictionaryClient client = new DictionaryClient(hostName, port);
 		client.run();
+		System.exit(0);
 	}
 }
